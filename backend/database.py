@@ -2,6 +2,7 @@ import os
 from datetime import date
 
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table, create_engine, inspect
+from sqlalchemy.pool import NullPool
 
 
 def _load_dotenv() -> None:
@@ -28,7 +29,8 @@ def database_url() -> str:
     """DATABASE_URL (Postgres in production). Falls back to a local SQLite file for development."""
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        return "sqlite:///" + os.path.join(os.path.dirname(__file__), "patients.db")
+        base_dir = "/tmp" if os.environ.get("VERCEL") else os.path.dirname(__file__)
+        return "sqlite:///" + os.path.join(base_dir, "patients.db")
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://"):]
     if url.startswith("postgresql://"):
@@ -37,11 +39,15 @@ def database_url() -> str:
 
 
 URL = database_url()
-engine = create_engine(
-    URL,
-    pool_pre_ping=True,
-    connect_args={"check_same_thread": False} if URL.startswith("sqlite") else {},
-)
+engine_kwargs = {
+    "connect_args": {"check_same_thread": False} if URL.startswith("sqlite") else {},
+}
+if os.environ.get("VERCEL") and not URL.startswith("sqlite"):
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(URL, **engine_kwargs)
 
 metadata = MetaData()
 patients = Table(

@@ -2,8 +2,9 @@
 
 A web app for hospital staff to manage admitted patients: add, view, filter, search, edit, delete and discharge.
 
-**Live app:** `<paste your frontend link here>`
-**Backend API:** `<paste your backend link here>/docs`
+**Live app:** https://patiens-admission-management.vercel.app/
+**Live API (patients):** https://patiens-admission-management.vercel.app/api/patients
+**GitHub repository:** https://github.com/Suresh97400/patiens_admission_management
 
 ## Tech stack
 
@@ -11,8 +12,8 @@ A web app for hospital staff to manage admitted patients: add, view, filter, sea
 |---|---|
 | Frontend | React.js (Vite), plain CSS |
 | Backend | Python, FastAPI, Pydantic (validation), SQLAlchemy |
-| Database | PostgreSQL in production (data persists across restarts); SQLite file for local development |
-| Hosting | Frontend on Vercel, backend on Render, database on Neon (all free tiers) |
+| Database | Neon PostgreSQL in production (data persists across restarts); SQLite file for local development |
+| Hosting | Vercel Services (frontend + FastAPI backend on one domain) + Neon PostgreSQL |
 
 ## Features
 1. Add a patient
@@ -66,11 +67,10 @@ No secrets are stored in this repo. Set these in the hosting dashboards (see `.e
 | Backend | `FRONTEND_ORIGINS` | Deployed frontend URL(s), comma-separated, for CORS |
 | Frontend | `VITE_API_URL` | Deployed backend URL |
 
-## Deployment
-1. **Database (Neon):** create a free Postgres project and copy the connection string.
-2. **Backend (Render):** New Web Service from this repo. Root directory `backend`, build command `pip install -r requirements.txt`, start command `uvicorn main:app --host 0.0.0.0 --port $PORT`. Add `DATABASE_URL` and `FRONTEND_ORIGINS`.
-3. **Frontend (Vercel):** import the repo, root directory `frontend`, framework Vite. Add `VITE_API_URL` = the Render URL (no trailing slash).
-4. Put the Vercel URL into Render's `FRONTEND_ORIGINS`, then redeploy the backend.
+## Deployment (Vercel Services + Neon)
+1. **Database (Neon):** create a free Postgres project and copy the connection string (`DATABASE_URL`).
+2. **Vercel:** import this repo with **Root Directory** set to `./` (repo root). `vercel.json` configures two services (`frontend` with Vite on `/(.*)` and `backend` with FastAPI on `/api/(.*)`).
+3. Add `DATABASE_URL` in Vercel **Project Settings → Environment Variables** and deploy.
 
 ## API
 | Method | Endpoint | Description |
@@ -90,8 +90,12 @@ docs/screenshots/   screenshots used below
 ```
 
 ## Screenshots
-Add your own screenshots to `docs/screenshots/` and keep these lines:
 
+### Desktop view
 ![Desktop list](docs/screenshots/desktop.png)
+
+### Add patient form with validation errors
 ![Add patient form with validation errors](docs/screenshots/form-validation.png)
+
+### Mobile view
 ![Mobile view](docs/screenshots/mobile.png)

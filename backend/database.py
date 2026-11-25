@@ -4,6 +4,26 @@ from datetime import date
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table, create_engine, inspect
 
 
+def _load_dotenv() -> None:
+    """Load backend/.env for local runs without overriding real environment variables."""
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if not os.path.isfile(env_path):
+        return
+    with open(env_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = val
+
+
+_load_dotenv()
+
+
 def database_url() -> str:
     """DATABASE_URL (Postgres in production). Falls back to a local SQLite file for development."""
     url = os.environ.get("DATABASE_URL", "").strip()
@@ -39,17 +59,24 @@ patients = Table(
 )
 
 
+_db_initialized = False
+
+
 def get_db():
     """FastAPI dependency: one connection per request. Endpoints commit explicitly."""
+    if not _db_initialized:
+        init_db()
     with engine.connect() as conn:
         yield conn
 
 
 def init_db() -> None:
     """Create the table if missing. Sample rows are added only when the table is first created."""
+    global _db_initialized
     existed = inspect(engine).has_table("patients")
     metadata.create_all(engine)
     if existed:
+        _db_initialized = True
         return
     with engine.begin() as conn:
         conn.execute(
@@ -63,3 +90,4 @@ def init_db() -> None:
                      doctor="Dr. Sneha Iyer", admission_date=date(2026, 11, 10), status="Discharged"),
             ],
         )
+    _db_initialized = True
